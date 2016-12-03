@@ -26,27 +26,30 @@ function makeGraphs(error, tripJson) {
 
 	//Demension
 	var dateDim = cf_trip.dimension(function(d) { return d["date"]; });
-	
 	var rainDim = cf_trip.dimension(function(d) {
-		if (d.precipitation > 0.3) return "Heavy Rain";
-		else if (d.precipitation >= 0.1 && d.precipitation <= 0.3) return "Moderate Rain";
-		else if (d.precipitation > 0 && d.precipitation < 0.1) return "Light Rain";
-		else return "No Rain";
+		if (d.precipitation > 0.3) return "Heavy";
+		else if (d.precipitation >= 0.1 && d.precipitation <= 0.3) return "Moderate";
+		else if (d.precipitation > 0 && d.precipitation < 0.1) return "Light";
+		else return "None";
+	});
+	var snowDim = cf_trip.dimension(function(d) {
+		if (d.snowdepth > 1.6) return "Heavy";
+		else if (d.snowdepth > 0.2 && d.snowdepth <= 1.6) return "Moderate";
+		else if (d.snowdepth > 0 && d.snowdepth <= 0.2) return "Light";
+		else return "None";
 	});
 
+	//Group
 	var dateGroup = dateDim.group();
 	var rainGroup = rainDim.group();
-	// var userByDate = dateDim.group().reduceSum(function(d) { return d.count; });
+	var snowGroup = snowDim.group();
 
 	var minDate = dateDim.bottom(1)[0]["date"];
 	var maxDate = dateDim.top(1)[0]["date"];
-	// var minDate = new Date(2013,5,1);
-	// var maxDate = new Date(2016,5,30);
-	// var minDate = "2013-07-01T00:00:00";
-	// var maxDate = "2016-06-30T23:59:59";
 
 	var timeChart = dc.barChart("#time-chart");
 	var rainChart = dc.pieChart("#rain-chart");
+	var snowChart = dc.pieChart("#snow-chart");
 
 	timeChart
 		.width(860)
@@ -62,16 +65,24 @@ function makeGraphs(error, tripJson) {
 		.yAxis().ticks(4);
 
 	rainChart
-		.height(240)
+		.ordinalColors(["#56B2EA","#E064CD","#F8B700","#78CC00","#7B71C5"])
+		.width(220)
 		.radius(100)
+		.innerRadius(60)
 		.dimension(rainDim)
 		.group(rainGroup)
-		.title(function(d){return d.value;});
+		.renderLabel(false)
+		.legend(dc.legend().x(90).y(65).gap(5));
 
-
-    // .on('pretransition', function(chart) {
-    //     chart.selectAll('text.pie-slice').text(function(d) {
-    //         return d.data.key + ' ' + dc.utils.printSingleValue((d.endAngle - d.startAngle) / (2*Math.PI) * 100) + '%';
+	snowChart
+		.ordinalColors(["#56B2EA","#E064CD","#F8B700","#78CC00","#7B71C5"])
+		.width(220)
+		.radius(100)
+		.innerRadius(60)
+		.dimension(snowDim)
+		.group(snowGroup)
+		.renderLabel(false)
+		.legend(dc.legend().x(90).y(75).gap(5));
 
 	dc.renderAll();
 };
