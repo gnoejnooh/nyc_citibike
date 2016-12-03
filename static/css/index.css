@@ -1,0 +1,14 @@
+.dc-chart {
+	float: none !important;
+	text-align: center;
+}
+
+.number-display {
+	font-size: 64px;
+	line-height: 180px;
+}
+
+#temp-chart,
+#wind-chart {
+	height: 205px;
+}

@@ -22,27 +22,40 @@ function makeGraphs(error, tripJson) {
 		d["avgwind"] = +d["avgwind"];
 	});
 	
-	var cf_trip = crossfilter(tripData);
+	var ndx = crossfilter(tripData);
 
 	//Demension
-	var dateDim = cf_trip.dimension(function(d) { return d["date"]; });
-	var rainDim = cf_trip.dimension(function(d) {
+	var dateDim = ndx.dimension(function(d) { return d["date"]; });
+	var rainDim = ndx.dimension(function(d) {
 		if (d.precipitation > 0.3) return "Heavy";
 		else if (d.precipitation >= 0.1 && d.precipitation <= 0.3) return "Moderate";
 		else if (d.precipitation > 0 && d.precipitation < 0.1) return "Light";
 		else return "None";
 	});
-	var snowDim = cf_trip.dimension(function(d) {
+	var snowDim = ndx.dimension(function(d) {
 		if (d.snowdepth > 1.6) return "Heavy";
 		else if (d.snowdepth > 0.2 && d.snowdepth <= 1.6) return "Moderate";
 		else if (d.snowdepth > 0 && d.snowdepth <= 0.2) return "Light";
 		else return "None";
 	});
 
+
 	//Group
+	var totalGroup = ndx.groupAll();
 	var dateGroup = dateDim.group();
 	var rainGroup = rainDim.group();
 	var snowGroup = snowDim.group();
+	var tempGroup = ndx.groupAll().reduce(
+		function (p, v) { ++p.n; p.tot += v.avgtemp; return p; },
+		function (p, v) { --p.n; p.tot -= v.avgtemp; return p; },
+		function () { return {n:0,tot:0}; }
+	);
+	var windGroup = ndx.groupAll().reduce(
+		function (p, v) { ++p.n; p.tot += v.avgwind; return p; },
+		function (p, v) { --p.n; p.tot -= v.avgwind; return p; },
+		function () { return {n:0,tot:0}; }
+	);
+	var average = function(d) { return d.n ? d.tot / d.n : 0; };
 
 	var minDate = dateDim.bottom(1)[0]["date"];
 	var maxDate = dateDim.top(1)[0]["date"];
@@ -50,6 +63,8 @@ function makeGraphs(error, tripJson) {
 	var timeChart = dc.barChart("#time-chart");
 	var rainChart = dc.pieChart("#rain-chart");
 	var snowChart = dc.pieChart("#snow-chart");
+	var tempChart = dc.numberDisplay("#temp-chart");
+	var windChart = dc.numberDisplay("#wind-chart");
 
 	timeChart
 		.width(860)
@@ -83,6 +98,21 @@ function makeGraphs(error, tripJson) {
 		.group(snowGroup)
 		.renderLabel(false)
 		.legend(dc.legend().x(90).y(75).gap(5));
+
+	tempChart
+		.valueAccessor(average)
+		.html({
+        temp:"<span>%number</span> F"
+      })
+		.group(tempGroup);
+
+	windChart
+		.formatNumber(d3.format(".2f"))
+		.valueAccessor(average)
+		.html({
+        wind:"<span>%number</span> mph"
+      })
+		.group(windGroup);
 
 	dc.renderAll();
 };
