@@ -10,20 +10,17 @@ app = Flask(__name__)
 MONGODB_HOST = 'localhost'
 MONGODB_PORT = 27017
 DBS_NAME = 'citibike'
-COLLECTION_TRIP = 'trips'
-COLLECTION_COUNT = 'count'
-COLLECTION_WTR = 'weather'
-FIELDS_TRIP = {'tripduration': True, 'starttime': True, 'stoptime': True,
- 'usertype': True, 'birth year': True, 'gender': True, '_id': False}
-FIELDS_COUNT = {'tripdate': True, 'count': True, '_id': False}
-FIELDS_WTR = {'DATE': True, 'PRCP': True, 'SNWD': True, 'SNOW': True,
- 'TMAX': True, 'TMIN': True, 'AWND': True, '_id': False}
+COLLECTION_TRIP = 'trip'
+FIELDS_TRIP = {'date': True, 'tripduration': True, 'startlong': True,
+ 'startlat': True, 'endlong': True, 'endlat': True, 'birthdate': True,
+  'gender': True, 'precipitation': True, 'snowdepth': True, 'avgtemp': True,
+   'avgwind': True, '_id': False}
 
 @app.route("/")
 def index():
 	return render_template("index.html")
 
-@app.route("/citibike/trips")
+@app.route("/citibike/trip")
 def citibike_trips():
 	connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
 	collection = connection[DBS_NAME][COLLECTION_TRIP]
@@ -34,30 +31,6 @@ def citibike_trips():
 	json_trips = json.dumps(json_trips, default=json_util.default)
 	connection.close()
 	return json_trips
-
-@app.route("/citibike/count")
-def citibike_count():
-	connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
-	collection = connection[DBS_NAME][COLLECTION_COUNT]
-	counts = collection.find(projection=FIELDS_COUNT)
-	json_count = []
-	for count in counts:
-		json_count.append(count)
-	json_count = json.dumps(json_count, default=json_util.default)
-	connection.close()
-	return json_count
-
-@app.route("/citibike/weather")
-def citibike_weather():
-	connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
-	collection = connection[DBS_NAME][COLLECTION_WTR]
-	wtrs = collection.find(projection=FIELDS_WTR)
-	json_wtrs = []
-	for wtr in wtrs:
-		json_wtrs.append(wtr)
-	json_wtrs = json.dumps(json_wtrs, default=json_util.default)
-	connection.close()
-	return json_wtrs
 
 if __name__ == "__main__":
 	app.run(host='0.0.0.0', port=5000, debug=True)
