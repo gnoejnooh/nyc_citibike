@@ -11,9 +11,11 @@ MONGODB_HOST = 'localhost'
 MONGODB_PORT = 27017
 DBS_NAME = 'citibike'
 COLLECTION_TRIP = 'trips'
+COLLECTION_COUNT = 'count'
 COLLECTION_WTR = 'weather'
 FIELDS_TRIP = {'tripduration': True, 'starttime': True, 'stoptime': True,
  'usertype': True, 'birth year': True, 'gender': True, '_id': False}
+FIELDS_COUNT = {'tripdate': True, 'count': True, '_id': False}
 FIELDS_WTR = {'DATE': True, 'PRCP': True, 'SNWD': True, 'SNOW': True,
  'TMAX': True, 'TMIN': True, 'AWND': True, '_id': False}
 
@@ -32,6 +34,18 @@ def citibike_trips():
 	json_trips = json.dumps(json_trips, default=json_util.default)
 	connection.close()
 	return json_trips
+
+@app.route("/citibike/count")
+def citibike_count():
+	connection = MongoClient(MONGODB_HOST, MONGODB_PORT)
+	collection = connection[DBS_NAME][COLLECTION_COUNT]
+	counts = collection.find(projection=FIELDS_COUNT)
+	json_count = []
+	for count in counts:
+		json_count.append(count)
+	json_count = json.dumps(json_count, default=json_util.default)
+	connection.close()
+	return json_count
 
 @app.route("/citibike/weather")
 def citibike_weather():
