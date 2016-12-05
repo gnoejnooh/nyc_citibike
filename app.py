@@ -11,10 +11,9 @@ MONGODB_HOST = 'localhost'
 MONGODB_PORT = 27017
 DBS_NAME = 'citibike'
 COLLECTION_TRIP = 'trip'
-FIELDS_TRIP = {'date': True, 'tripduration': True, 'startlong': True,
- 'startlat': True, 'endlong': True, 'endlat': True, 'birthdate': True,
-  'gender': True, 'precipitation': True, 'snowdepth': True, 'avgtemp': True,
-   'avgwind': True, '_id': False}
+FIELDS_TRIP = {'date': True, 'tripduration': True, 'start': True,
+ 'birthdate': True, 'gender': True, 'precipitation': True, 'snowdepth': True,
+  'avgtemp': True, 'avgwind': True, '_id': False}
 
 @app.route("/")
 def index():

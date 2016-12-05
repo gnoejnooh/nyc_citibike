@@ -1,8 +1,9 @@
 queue()
 	.defer(d3.json, "/citibike/trip")
+	.defer(d3.json, "/static/geojson/nyc-zip-code.json")
 	.await(makeGraphs);
 
-function makeGraphs(error, tripJson) {
+function makeGraphs(error, tripJson, nycJson) {
 
 	var tripData = tripJson;
 	var dateFormat = d3.time.format("%m/%d/%y");
@@ -10,11 +11,8 @@ function makeGraphs(error, tripJson) {
 	tripData.forEach(function(d) {
 		d["date"] = dateFormat.parse(d["date"]);
 		d["tripduration"] = +d["tripduration"];
-		d["startlong"] = +d["startlong"];
-		d["startlat"] = +d["startlat"];
-		d["endlong"] = +d["endlong"];
-		d["endlat"] = +d["endlat"];
 		d["birthdate"] = +d["birthdate"];
+		d["start"] = +d["start"];
 		d["gender"] = +d["gender"];
 		d["precipitation"] = +d["precipitation"];
 		d["snowdepth"] = +d["snowdepth"];
@@ -38,10 +36,24 @@ function makeGraphs(error, tripJson) {
 		else if (d.snowdepth > 0 && d.snowdepth <= 0.2) return "Light";
 		else return "None";
 	});
-
+	var genderDim = ndx.dimension(function(d) {
+		if (d.gender == 1) { return "Male"; }
+		else { return "Female"; }
+	});
+	var birthDim = ndx.dimension(function(d) {
+		if (d.birthdate >= 1987) return "14-25";
+		else if (d.birthdate >= 1981 && d.birthdate <= 1986) return "26-31";
+		else if (d.birthdate >= 1964 && d.birthdate <= 1980) return "32-48";
+		else return "49-67 and Above";
+	});
+	var nycDim = ndx.dimension(function(d) { return d["start"]; });
+	
+	var projection = d3.geo.conicConformal()
+      .parallels([40 + 40 / 60, 41 + 2 / 60])
+      .scale(240000)
+      .rotate([74, -40 - 45 / 60]);
 
 	//Group
-	var totalGroup = ndx.groupAll();
 	var dateGroup = dateDim.group();
 	var rainGroup = rainDim.group();
 	var snowGroup = snowDim.group();
@@ -56,6 +68,9 @@ function makeGraphs(error, tripJson) {
 		function () { return {n:0,tot:0}; }
 	);
 	var average = function(d) { return d.n ? d.tot / d.n : 0; };
+	var genderGroup = genderDim.group().reduceSum(function(d){ return 100; });
+	var birthGroup = birthDim.group().reduceSum(function(d){ return 100; });
+	var nycGroup = nycDim.group().reduceSum(function(d){ return d["tripduration"]; });
 
 	var minDate = dateDim.bottom(1)[0]["date"];
 	var maxDate = dateDim.top(1)[0]["date"];
@@ -65,9 +80,12 @@ function makeGraphs(error, tripJson) {
 	var snowChart = dc.pieChart("#snow-chart");
 	var tempChart = dc.numberDisplay("#temp-chart");
 	var windChart = dc.numberDisplay("#wind-chart");
+	var genderChart = dc.rowChart("#gender-chart");
+	var birthChart = dc.rowChart("#birthdate-chart");
+	var nycChart = dc.geoChoroplethChart("#nyc-chart");
 
 	timeChart
-		.width(860)
+		.width(1200)
 		.height(320)
 		.margins({top: 10, right: 50, bottom: 30, left: 50})
 		.dimension(dateDim)
@@ -114,5 +132,31 @@ function makeGraphs(error, tripJson) {
       })
 		.group(windGroup);
 
+	genderChart
+		.width(480)
+		.dimension(genderDim)
+		.group(genderGroup)
+		.xAxis().ticks(4);
+
+	birthChart
+		.width(480)
+		.dimension(birthDim)
+		.group(birthGroup)
+		.xAxis().ticks(4);
+
+	nycChart
+		.width(380)
+		.height(837)
+		.dimension(nycDim)
+		.group(nycGroup)
+		.overlayGeoJson(nycJson["features"], "station", function(d) { return d.properties["ZIP"]; })
+		.projection(projection.translate([-140,430]))
+		.title(function (p) {
+			return "Zipcode: " + p["key"]
+					+ "\n"
+					+ "Total Trip Duration: " + Math.round(p["value"]);
+		});
+
 	dc.renderAll();
+	// nycChart.render();
 };

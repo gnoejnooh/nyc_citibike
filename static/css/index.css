@@ -12,3 +12,7 @@
 #wind-chart {
 	height: 205px;
 }
+
+.layer0 {
+  transform: rotate(-30deg);
+}
